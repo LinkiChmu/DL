@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import time
 from torchinfo import summary
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 LR = 0.001
 NUM_EPOCHS = 10
 
@@ -30,28 +30,28 @@ plt.imshow(image.squeeze(), cmap='gray')
 plt.title(labels[label])
 plt.show()
 
-
 train_iter = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_iter = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 model = nn.Sequential(
-    nn.Conv2d(1, 6, kernel_size=5, padding=2),  # 28x28
+    nn.Conv2d(1, 16, kernel_size=5, padding=2),  # 28x28
+    nn.BatchNorm2d(16),
     nn.ReLU(),
     nn.MaxPool2d(2),  # 14x14
 
-    nn.Conv2d(6, 16, kernel_size=5),  # 10x10
+    nn.Conv2d(16, 32, kernel_size=5),  # 10x10
+    nn.BatchNorm2d(32),
     nn.ReLU(),
     nn.MaxPool2d(2),  # 5х5
 
-    nn.Conv2d(16, 32, kernel_size=3), # 3x3
+    nn.Conv2d(32, 128, kernel_size=5), # 1x1
+    nn.BatchNorm2d(128),
     nn.ReLU(),
 
     nn.Flatten(),
-    nn.BatchNorm1d(288),
-    nn.Linear(288, 64),
-    nn.BatchNorm1d(64),
-    nn.ReLU(),
-    nn.Linear(64, 10)
+
+    nn.Dropout(0.5),
+    nn.Linear(128, 10)
 )
 model = model.to(device)
 summary(model, input_size=(1, 1, 28, 28), device=device)
@@ -96,4 +96,4 @@ def train(model, optimizer, device, n_epochs=5):
               f"test_loss: {test_loss / test_samples}\ttest_acc: {test_acc / test_samples}")
 
 
-train(model, optimizer, n_epochs=NUM_EPOCHS, device=device)
+train(model, optimizer, n_epochs=NUM_EPOCHS, device=device) # epoch: 9, taken: 7.517, train_acc: 0.9333	test_acc: 0.9152
