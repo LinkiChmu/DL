@@ -4,12 +4,13 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import time
+from torchinfo import summary
 
 BATCH_SIZE = 32
 LR = 0.001
 NUM_EPOCHS = 10
 
-mac_device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 transformer = transforms.Compose([
     transforms.ToTensor(),
@@ -27,11 +28,35 @@ image, label = test_dataset[1]
 image[0].shape  # torch.Size([28, 28])
 plt.imshow(image.squeeze(), cmap='gray')
 plt.title(labels[label])
-# plt.show()
+plt.show()
 
 
 train_iter = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_iter = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+model = nn.Sequential(
+    nn.Conv2d(1, 6, kernel_size=5, padding=2),  # 28x28
+    nn.ReLU(),
+    nn.MaxPool2d(2),  # 14x14
+
+    nn.Conv2d(6, 16, kernel_size=5),  # 10x10
+    nn.ReLU(),
+    nn.MaxPool2d(2),  # 5х5
+
+    nn.Conv2d(16, 32, kernel_size=3), # 3x3
+    nn.ReLU(),
+
+    nn.Flatten(),
+    nn.BatchNorm1d(288),
+    nn.Linear(288, 64),
+    nn.BatchNorm1d(64),
+    nn.ReLU(),
+    nn.Linear(64, 10)
+)
+model = model.to(device)
+summary(model, input_size=(1, 1, 28, 28), device=device)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
 def train(model, optimizer, device, n_epochs=5):
     criterion = nn.CrossEntropyLoss()
@@ -71,26 +96,4 @@ def train(model, optimizer, device, n_epochs=5):
               f"test_loss: {test_loss / test_samples}\ttest_acc: {test_acc / test_samples}")
 
 
-model = nn.Sequential(
-    nn.Conv2d(1, 6, kernel_size=5, padding=2),  # 28x28
-    nn.ReLU(),
-    nn.MaxPool2d(2),  # 14x14
-
-    nn.Conv2d(6, 16, kernel_size=5),  # 10x10
-    nn.ReLU(),
-    nn.MaxPool2d(2),  # 5х5
-
-    nn.Conv2d(16, 32, kernel_size=3), # 3x3
-    nn.ReLU(),
-
-    nn.Flatten(),
-    nn.BatchNorm1d(288),
-    nn.Linear(288, 64),
-    nn.BatchNorm1d(64),
-    nn.ReLU(),
-    nn.Linear(64, 10)
-)
-model = model.to(mac_device)
-optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-
-train(model, optimizer, n_epochs=NUM_EPOCHS, device=mac_device)
+train(model, optimizer, n_epochs=NUM_EPOCHS, device=device)
